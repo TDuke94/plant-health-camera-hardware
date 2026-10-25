@@ -1,6 +1,6 @@
 # plant-health-camera-hardware
 
-Hardware for a handheld plant-health camera used at the community garden. The camera captures raw frames, signs them at capture, and syncs them to the garden hub (a Raspberry Pi 5) over USB-C. Crop health and nutrient analysis runs on the hub or offline.
+Hardware for a handheld plant-health camera. The camera captures raw frames, signs them at capture, and syncs them to a hub (a Raspberry Pi 5) over USB-C. Crop health and nutrient analysis runs on the hub or offline.
 
 Firmware lives in [plant-health-camera-firmware](https://github.com/TDuke94/plant-health-camera-firmware).
 

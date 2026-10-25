@@ -1,6 +1,6 @@
 # Rev A hardware spec
 
-Status: draft, 2026-10-25. Design context: [Garden Camera and Crop Health Design](https://claude.ai/artifact/Lo3YEv37iU5qQME5cBJCev).
+Status: draft, 2026-10-25.
 
 ## Goal
 
@@ -139,7 +139,7 @@ Off-board:
 
 | Item | Pick | Notes |
 | --- | --- | --- |
-| GNSS breakout | Dual-band L1/L5 with raw observation output (Quectel LC29H family or Unicore UM980) | Confirm the variant outputs raw data for PPK against the barn base |
+| GNSS breakout | Dual-band L1/L5 with raw observation output (Quectel LC29H family or Unicore UM980) | Confirm the variant outputs raw data for PPK against a local RTK base |
 | GNSS antenna | Dual-band L1/L5 active patch | — |
 | Display | 2.4 to 2.8 in IPS, ST7789 class, SPI | — |
 | Power | USB-C PD power bank, 5 V / 3 A | — |
