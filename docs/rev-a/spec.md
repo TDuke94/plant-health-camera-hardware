@@ -14,7 +14,7 @@ Rev A proves the camera's core loop before anyone lays out an STM32N6 BGA:
 
 Rev A is two small boards around an unmodified NUCLEO-N657X0-Q:
 
-- **Shield**: plugs onto the Nucleo's ARDUINO and ST morpho headers. Low speed only, no BGA, hand-solderable.
+- **Shield**: plugs onto the Nucleo's two ST morpho headers (CN3, CN15), which carry every ARDUINO signal too. Low speed only, no BGA. Schematic: [kicad/shield](../../kicad/shield).
 - **CSI-2 mux board**: connects to the Nucleo's 22-pin camera FPC (CN6) and fans out to four sensor ports. It is the only board with high-speed signals.
 
 Rev B folds both into one N6 board once rev A works.
@@ -60,41 +60,49 @@ Each band is captured, hashed, written to microSD, then the next band is capture
 | Display | Shield connector + off-the-shelf panel | SPI5 (shared) + DC/RST/backlight PWM | 2.4 to 2.8 in, ST7789 class, 320 x 240 |
 | IMU | Shield | I2C1 + INT | LSM6DSO class |
 | Shutter + D-pad | Shield | 7 GPIOs | Two-stage shutter, 4-way + centre |
-| White LED flash | Shield | PWM + enable | Constant-current driver from 5 V |
-| NIR LEDs | Shield | Footprint only | Not fitted on rev A |
+| White LED flash | Shield | PWM | Low-side MOSFET, resistor current limit, from 5 V |
+| NIR LEDs | Shield | Enable (PE10) | Footprints only, not fitted on rev A |
 | Qwiic header | Shield | I2C1, 3V3 | AS7341, ToF, NFC, buzzer as breakouts |
 | Wi-Fi | — | Not on rev A | Footprint in rev B |
 | Power | Nucleo CN8 | USB-C | Power bank in the field, the hub at the dock |
 
 ## Pin budget
 
-ARDUINO pins come from UM3417 Table 18 and are confirmed in the manual. ST morpho pins are taken from the manual's list of free GPIOs and **must be checked against the MB1940 schematic** for solder bridges and I/O voltage before layout. Some N6 I/O banks run at 1.8 V (the ARDUINO analog pins are 1.8 V); any 3V3 peripheral on a 1.8 V pin needs a level shifter.
+Header pins come from UM3417 Table 20 (ST morpho CN3 and CN15). The manual states that the MCU's digital I/O on these headers is 3.3 V; only the ARDUINO A0-A5 inputs are 1.8 V analog, and the shield doesn't use them. No solder bridge is documented on any pin below. PC3 and PC4 are taken on the Nucleo (ST-LINK USB PD CC lines), so the D-pad avoids them; PC9 isn't on the morpho headers.
 
-| Function | MCU pin | Header | Confirmed |
+| Function | MCU pin | Header pin | Net |
 | --- | --- | --- | --- |
-| SPI5_SCK (display, microSD) | PE15 | ARDUINO D13 | Manual |
-| SPI5_MISO | PG1 | ARDUINO D12 | Manual |
-| SPI5_MOSI | PG2 | ARDUINO D11 | Manual |
-| Display CS | PA3 | ARDUINO D10 | Manual |
-| Display backlight PWM (TIM1_CH2) | PD7 | ARDUINO D9 | Manual |
-| Display DC | PD12 | ARDUINO D8 | Manual |
-| Display RST | PE11 | ARDUINO D7 | Manual |
-| Flash LED PWM (TIM1_CH4N) | PD5 | ARDUINO D6 | Manual |
-| Flash LED enable | PE10 | ARDUINO D5 | Manual |
-| microSD CS | PE0 | ARDUINO D4 | Manual |
-| GNSS PPS (TIM1_CH1 input capture) | PE9 | ARDUINO D3 | Manual |
-| microSD card detect | PD0 | ARDUINO D2 | Manual |
-| GNSS TX -> MCU (USART3_RX) | PD9 | ARDUINO D0 | Manual |
-| MCU -> GNSS RX (USART3_TX) | PD8 | ARDUINO D1 | Manual |
-| I2C1_SDA (SE, IMU, Qwiic) | PC1 | ARDUINO D14 | Manual |
-| I2C1_SCL | PH9 | ARDUINO D15 | Manual |
-| Shutter half-press | PC0 | morpho | Check schematic |
-| Shutter full-press | PC2 | morpho | Check schematic |
-| D-pad up / down / left / right / centre | PC3, PC4, PC5, PC8, PC9 | morpho | Check schematic |
-| IMU INT | PD6 | morpho | Check schematic |
-| GNSS reset | PD10 | morpho | Check schematic |
-| SE / spare GPIO | PD11 | morpho | Check schematic |
-| CSI-2, I2C2, PWR_EN, NRST_CAM | (fixed) | CN6 FPC | Manual |
+| 5 V in | — | CN3-6, CN3-18 | +5V |
+| Ground | — | CN3-8, 19, 20, 22; CN15-9, 20 | GND |
+| Shutter half-press | PC0 | CN3-17 | SHUTTER_HALF |
+| Shutter full-press | PC2 | CN3-3 | SHUTTER_FULL |
+| D-pad up | PC5 | CN3-15 | NAV_UP |
+| D-pad down | PC8 | CN3-37 | NAV_DOWN |
+| D-pad left | PE4 | CN3-21 | NAV_LEFT |
+| D-pad right | PE7 | CN15-22 | NAV_RIGHT |
+| D-pad centre | PE1 | CN15-24 | NAV_CENTER |
+| I2C1_SCL (SE, IMU, Qwiic) | PH9 | CN15-3 | I2C1_SCL |
+| I2C1_SDA | PC1 | CN15-5 | I2C1_SDA |
+| IMU INT1 | PD6 | CN15-6 | IMU_INT |
+| SPI5_SCK (display, microSD) | PE15 | CN15-11 | SPI_SCK |
+| SPI5_MISO | PG1 | CN15-13 | SPI_MISO |
+| SPI5_MOSI | PG2 | CN15-15 | SPI_MOSI |
+| Display CS | PA3 | CN15-17 | LCD_CS |
+| Display backlight PWM (TIM1_CH2) | PD7 | CN15-19 | LCD_BL |
+| Display DC | PD12 | CN15-21 | LCD_DC |
+| Display RST | PE11 | CN15-23 | LCD_RST |
+| Flash LED PWM (TIM1_CH4N) | PD5 | CN15-25 | FLASH_PWM |
+| NIR LED enable (not fitted) | PE10 | CN15-27 | NIR_EN |
+| microSD CS | PE0 | CN15-29 | SD_CS |
+| GNSS PPS (TIM1_CH1 input capture) | PE9 | CN15-31 | GNSS_PPS |
+| microSD card detect | PD0 | CN15-33 | SD_CD |
+| GNSS reset | PD10 | CN15-34 | GNSS_RST |
+| MCU -> GNSS RX (USART3_TX) | PD8 | CN15-35 | GNSS_RXD |
+| Spare (test point) | PD11 | CN15-36 | SPARE_PD11 |
+| GNSS TX -> MCU (USART3_RX) | PD9 | CN15-37 | GNSS_TXD |
+| CSI-2, I2C2, PWR_EN, NRST_CAM | (fixed) | CN6 FPC | Mux board |
+
+I2C1 addresses: ATECC608B 0x60, LSM6DSO 0x6A (SA0 to GND), AS7341 0x39, VL53L4 0x29. The manual doesn't say whether the Nucleo pulls up I2C1, so the shield has 4.7 k pull-ups (R1, R2) to fit or leave off.
 
 USART1 (PE5/PE6) stays the ST-LINK virtual COM port for the Zephyr console. The CN6 I2C2 bus is shared with the Nucleo's USB-C PD controller, so mux-board I2C addresses must avoid the PD controller's address (check the schematic).
 
@@ -115,25 +123,34 @@ Estimated budget (rough, to be measured on the bench):
 | IMU, SE, Qwiic sensors | 3V3 shield | 10 mA | 30 mA |
 | White LED flash | 5 V | 0 | 700 mA for < 50 ms |
 
-The flash peak plus the rest is close to the 1.5 A UCPD limit, so the flash driver gets a local bulk capacitor (470 to 1000 uF) and a current limit, and firmware never fires the flash during an SD write.
+The flash peak plus the rest is close to the 1.5 A UCPD limit, so the flash has a local 1000 uF bulk capacitor and a fixed current limit, and firmware never fires the flash during an SD write. The driver is a low-side AO3400A with two 5.6 ohm 1 W resistors in parallel: (5 V - 3.0 V) / 2.8 ohm gives about 0.7 A. A buck LED driver is a rev B option if the flash needs to be brighter or more efficient.
 
 ## Shield BOM (first pass)
 
-| Ref | Part | Alternate | Package | Notes |
+References match the schematic in `kicad/shield`.
+
+| Ref | Part | Alternate | Footprint | Notes |
 | --- | --- | --- | --- | --- |
-| U1 | ATECC608B-SSHDA (secure element) | STSAFE-A120 | SOIC-8 | I2C1, 3V3 |
-| U2 | LSM6DSO (IMU) | ISM330DHCX | LGA-14 | Needs fab assembly or hot air |
-| U3 | AP2112K-3.3 (LDO, 600 mA) | TLV75733P | SOT-23-5 | Shield 3V3 |
-| U4 | AL8860 or similar buck LED driver | Low-side MOSFET + sense resistor | SOT-89 / SOT-23 | White flash, ~700 mA |
-| J1 | microSD push-push socket with card detect | — | SMD | SPI mode |
-| J2 | Display FPC or 2.54 mm header | — | — | Matches the chosen panel |
-| J3 | GNSS header: 3V3, GND, TX, RX, PPS, RESET | — | 2.54 mm | For a dual-band breakout |
-| J4 | Qwiic (JST-SH 4-pin) | — | SMD | I2C1, 3V3 |
-| SW1 | Two-stage tactile switch | Two stacked switches | — | Shutter |
-| SW2 | 5-way navigation switch | Five tactile switches | — | D-pad |
-| D1 | High-CRI white LED, 1 to 3 W | — | — | Flash |
-| D2-D5 | NIR LED footprints (850 nm) | — | — | Not fitted |
-| — | ARDUINO + morpho stacking headers | — | 2.54 mm | Match MB1940 positions |
+| J1, J2 | 2x19 pin sockets, 2.54 mm | Stacking headers | PinSocket_2x19 | Mate with Nucleo CN3, CN15 |
+| U1 | AP2112K-3.3 (LDO, 600 mA) | TLV75733P | SOT-23-5 | Shield 3V3 |
+| U2 | ATECC608B-SSHDA (secure element) | STSAFE-A120 | SOIC-8 | I2C1, 0x60 |
+| U3 | LSM6DSO (IMU) | ISM330DHCX | LGA-14 3 x 2.5 mm | Drawn with the pin-compatible LSM6DSL symbol; needs fab assembly or hot air |
+| J3 | Qwiic, JST-SH 4-pin | — | SM04B-SRSS-TB | GND, 3V3, SDA, SCL |
+| J4 | Hirose DM3AT-SF-PEJM5 microSD, push-push, card detect | — | DM3AT | SPI mode |
+| J5 | 1x8 socket for the display module | Panel FPC on rev B | PinSocket_1x08 | 3V3, GND, SCK, MOSI, CS, DC, RST, BL |
+| J6 | 1x7 socket for the GNSS breakout | — | PinSocket_1x07 | 5V, 3V3, GND, TXD, RXD, PPS, RST |
+| SW1, SW2 | Tactile switches, half and full press | One two-stage switch | TL3342 | Shutter |
+| SW3-SW7 | Tactile switches | One 5-way nav switch | TL3342 | D-pad |
+| D1 | High-CRI white LED, Cree XP-G class | — | LED_Cree-XP | Flash, ~0.7 A pulses; pad 3 is thermal only |
+| Q1 | AO3400A | Any logic-level N-FET, SOT-23 | SOT-23 | Flash switch |
+| R8, R9 | 5.6 ohm, 1 W | — | 2512 | Flash current limit, in parallel |
+| C9 | 1000 uF, 10 V electrolytic | — | Radial D10 | Flash bulk |
+| D2-D5, Q2, R12-R15 | 850 nm LEDs and driver | — | 1206, SOT-23 | Not fitted on rev A |
+| R1, R2 | 4.7 k | — | 0603 | I2C1 pull-ups, optional |
+| R3-R7 | 47 k / 10 k | — | 0603 | microSD pull-ups and card detect |
+| TP1-TP8 | Test pads | — | 1.5 mm pad | 5V, 3V3, GND, PPS, SDA, SCL, SD_CS, PD11 |
+
+The Nucleo has its own ST-LINK, so the shield needs no SWD header.
 
 Off-board:
 
@@ -169,8 +186,11 @@ The enclosure is 3D printed (PETG or ASA) around the Nucleo + shield stack, with
 
 ## Open items
 
-- [ ] Confirm morpho pin choices and I/O voltage domains against the MB1940 schematic
-- [ ] Confirm the PD controller's I2C2 address and that the mux-board parts avoid it
+- [x] Confirm morpho pin choices and I/O voltage against UM3417 (Table 20; digital I/O is 3.3 V)
+- [ ] Cross-check the pin table against the MB1940 schematic before ordering
+- [ ] Find out whether the Nucleo pulls up I2C1, and fit or remove R1/R2
+- [ ] Confirm the PD controller's I2C2 address (the manual doesn't give it) and that the mux-board parts avoid it
+- [ ] Run ERC on the shield schematic in KiCad 9 and tidy its layout
 - [ ] Pick the GNSS breakout that outputs raw observations
 - [ ] Pick the display panel and its connector
 - [ ] Pick the band filters and the sensor module source
