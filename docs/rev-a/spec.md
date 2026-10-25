@@ -163,11 +163,23 @@ Off-board:
 
 ## CSI-2 mux board
 
-Plugs into CN6 with a 22-pin, 0.5 mm FPC and offers four 22-pin sensor ports in the same pinout.
+Plugs into the Nucleo's CN6 with a 22-pin, 0.5 mm FPC and offers four 22-pin sensor ports. Schematic: [kicad/csi-mux/](../../kicad/csi-mux/).
 
-- **Switching:** three [TI TMUX646](https://www.ti.com/product/TMUX646) 2:1 MIPI switches as a tree (one root, two leaves) carry the clock and both data lanes. TMUX646 replaces the TS5MP646, which TI no longer recommends for new designs. A build option fits only the root switch for a two-port board.
-- **Control:** a TCA9548A-class I2C mux gives each sensor its own I2C segment, since identical sensors share an address. A PCA9536/PCA9554-class GPIO expander drives the switch selects and each port's power enable and reset. Everything is controlled over CN6's I2C2, so no extra cable runs to the shield.
-- **Power:** one load switch per port from VDD_CAM (3V3), so only the selected sensor is powered.
+- **Upstream (J1):** CN6 uses ST's 22-pin pinout, not the Pi's. It carries 2 data lanes, the clock, I2C2 (PB10/PB11), a reset line, a power-enable line and 3V3. I2C2 is shared with the Nucleo's USB-C PD controller, so the mux board's addresses must avoid it.
+- **Sensor ports (J2-J5):** Raspberry Pi 22-pin pinout, 2 lanes used. Pin 17 (IO0) is the module's power enable and pin 18 (IO1) is left for its LED or a spare. Pi-style modules regulate their own rails from 3V3, so no per-port load switches are needed; the expander turns each module on through IO0, with a 100 k pull-down so ports stay off at reset.
+- **Switching:** three [TI TMUX646](https://www.ti.com/product/TMUX646) 2:1 MIPI switches as a tree carry the clock and both data lanes. The root (U1) picks a leaf; leaf U2 serves ports 0/1 and leaf U3 serves ports 2/3, with one shared leaf select. ~OE is active low and is shared by all three. TMUX646 replaces the TS5MP646, which TI no longer recommends for new designs.
+- **I2C:** a TCA9548A (0x70) gives each port its own I2C segment, since identical sensors share an address. Each segment has 2.2 k pull-ups. The upstream 4.7 k pull-ups are DNP until we know whether the Nucleo already pulls up I2C2. The mux's reset comes from the CN6 reset line.
+- **GPIO expander:** a TCA9554 (0x20) on the upstream bus:
+
+  | Pin | Net | Use |
+  | --- | --- | --- |
+  | P0 | SEL_ROOT | Root switch: low = ports 0/1, high = ports 2/3 |
+  | P1 | SEL_LEAF | Leaf switches: low = even port, high = odd port |
+  | P2 | SW_OE_N | All switches off when high |
+  | P3-P6 | CAM0_EN-CAM3_EN | Port power enable (module IO0) |
+  | P7 | spare | |
+
+- **Package:** the TMUX646 comes only as a 36-ball, 0.4 mm pitch nFBGA (ZEC, 2.45 mm). That needs via-in-pad or a fab's fine-pitch BGA rules, and assembly by the fab. The schematic uses a stock 6x6 0.4 mm BGA footprint as a placeholder; a footprint drawn from the ZEC land pattern replaces it before layout.
 - **Layout:** 4 layers, 100 ohm differential pairs with the fab's impedance-controlled stackup, length-matched within each lane group, no stubs at the switch pins, solid reference plane under the pairs.
 - **Sensors:** identical global-shutter mono modules (OV9281 class) in the Pi 22-pin pinout, each behind a narrowband filter: green, red, red edge, NIR. Rev A fits one or two.
 
@@ -190,7 +202,9 @@ The enclosure is 3D printed (PETG or ASA) around the Nucleo + shield stack, with
 - [ ] Cross-check the pin table against the MB1940 schematic before ordering
 - [ ] Find out whether the Nucleo pulls up I2C1, and fit or remove R1/R2
 - [ ] Confirm the PD controller's I2C2 address (the manual doesn't give it) and that the mux-board parts avoid it
-- [ ] Run ERC on the shield schematic in KiCad 9 and tidy its layout
+- [ ] Run ERC on the shield and mux schematics in KiCad 9 and tidy their layout
+- [ ] Draw the TMUX646 ZEC footprint and confirm the fab's via-in-pad rules
+- [ ] Confirm the CN6 pinout and FPC contact side against the MB1940 schematic
 - [ ] Pick the GNSS breakout that outputs raw observations
 - [ ] Pick the display panel and its connector
 - [ ] Pick the band filters and the sensor module source

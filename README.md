@@ -16,7 +16,8 @@ Firmware lives in [plant-health-camera-firmware](https://github.com/TDuke94/plan
 ```
 docs/rev-a/         rev A spec, pin budget, review checklist
 kicad/shield/       rev A shield schematic (KiCad)
-kicad/csi-mux/      rev A CSI-2 mux board (KiCad), to come
+kicad/csi-mux/      rev A CSI-2 mux board schematic (KiCad)
+kicad/lib/          project symbols
 ```
 
 ## Tooling
